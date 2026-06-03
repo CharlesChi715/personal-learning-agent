@@ -300,3 +300,514 @@ A model that naturally defaults to your style with a shorter prompt, and you can
 | 5       | Human-in-the-Loop   | Collect feedback and build a dataset            |
 | 6       | Prompt Optimization | Learn your preferences through prompt evolution |
 | 7       | Fine-Tuning         | Encode your style directly into a model         |
+
+
+# Technologies Map
+
+## LLM Fundamentals
+
+**Learn first: ~1–2 weeks**
+
+### How an LLM API Call Works
+
+Learn:
+
+* Messages
+* Roles
+
+  * `system`
+  * `user`
+  * `assistant`
+* `temperature`
+* `max_tokens`
+
+This is the whole foundation.
+
+Everything else is orchestration around it.
+
+### Prompt Engineering
+
+Learn:
+
+* System prompts
+* Few-shot examples
+* Structured output
+
+  * Asking for JSON
+  * Parsing JSON
+
+### Context Windows
+
+Understand why you cannot just “remember everything.”
+
+This constraint drives the entire memory design.
+
+### Token Cost Awareness
+
+You have already explored this with output-token minimization.
+
+The same instinct applies here.
+
+---
+
+# Orchestration / Agent Frameworks
+
+This is the glue.
+
+## Start With No Framework
+
+Use only:
+
+* Raw Anthropic Python SDK
+* Or raw OpenAI Python SDK
+
+Build the loop yourself first.
+
+You will understand agents far better after building one with plain `while` loops.
+
+## Then Use LangGraph
+
+Use LangGraph when you need:
+
+* Real loops
+* Branching
+* State
+
+LangGraph models your cycle exactly:
+
+```text
+generate → evaluate → improve → check stopping condition
+```
+
+This is the single most relevant framework for your goal.
+
+## Optional Later: Pydantic AI
+
+Use Pydantic AI later if you want lighter, more typed agents.
+
+---
+
+# Evaluation Systems
+
+This is your hard 20%.
+
+## LLM-as-Judge
+
+Use one LLM call to score another LLM's output against criteria.
+
+This is how your personalized evaluator starts life.
+
+## Rubric Design
+
+Turn vague preferences into concrete, scorable criteria.
+
+Example:
+
+```text
+"Concise but complete"
+```
+
+Becomes:
+
+```text
+- Removes unnecessary detail
+- Keeps all essential reasoning
+- Uses examples only when helpful
+- Does not over-explain obvious points
+```
+
+## Eval Frameworks
+
+Use:
+
+* `promptfoo`
+
+  * Easy
+  * Config-driven
+* `DeepEval`
+
+  * More systematic testing
+
+---
+
+# Memory & Retrieval
+
+## Structured Memory
+
+Use a plain SQLite or JSON store for:
+
+* Goals
+* Preferences
+* Past feedback
+
+This is underrated.
+
+Start here, not with vectors.
+
+## RAG
+
+Retrieval-Augmented Generation means:
+
+* Embeddings
+* Vector database
+* Pulling relevant past answers and feedback into context
+
+Good local option:
+
+* Chroma
+
+Later options:
+
+* Qdrant
+* pgvector
+
+## When Not to Use RAG
+
+Do not use RAG if your data fits in the context window.
+
+In that case, RAG adds complexity for nothing.
+
+---
+
+# Personalization at the Deep End
+
+## Preference Data Collection
+
+Collect:
+
+* Ratings
+* Edits
+* Pairwise comparisons
+
+Example:
+
+```text
+A vs B — which is better?
+```
+
+## Fine-Tuning vs Alternatives
+
+Fine-tuning is covered honestly in the capstone section.
+
+For a beginner, it is usually the wrong first move.
+
+---
+
+# Supporting Tooling
+
+Do not skip this.
+
+## Python Basics
+
+Learn:
+
+* Python fundamentals
+* `venv`
+* Environment variables for API keys
+
+## Git/GitHub
+
+Use Git/GitHub for versioning.
+
+## Observability
+
+Start with:
+
+* Logging
+
+Later graduate to:
+
+* LangSmith
+* Langfuse
+
+These trace every step of an agent run and are invaluable for debugging loops.
+
+---
+
+# What Is Deliberately Not Here
+
+Do not focus on:
+
+* Training your own model from scratch
+* Kubernetes
+* Heavy MLOps
+* RLHF infrastructure
+
+None of these are essential for what you are building.
+
+Chasing them is the most common way beginners stall.
+
+
+
+# Final Capstone: The Personalized Iterative Learning Agent
+
+This integrates Projects 1–7 into the system you described, then addresses the deep-end question honestly.
+
+---
+
+# Architecture
+
+## Mapping Directly to Your 10 Requirements
+
+A LangGraph agent with this state and flow:
+
+## 1. Generate
+
+Produce an initial answer, conditioned on:
+
+* Memory
+
+  * Your goals
+  * Your preferences
+* RAG-retrieved past feedback
+
+## 2. Evaluate
+
+The personalized evaluator scores against criteria assembled from:
+
+* Stored preferences
+* Retrieved corrections
+
+**Maps to requirements:** 2, 7
+
+## 3. Diagnose
+
+The evaluator outputs specific weaknesses:
+
+* Missing context
+* Unclear sections
+* Unnecessary detail
+
+**Maps to requirement:** 3
+
+## 4. Improve
+
+Rewrite the answer by addressing the diagnosis.
+
+**Maps to requirement:** 4
+
+## 5. Stopping Check
+
+Conditional edge exits on:
+
+* Score threshold
+* Max iterations
+* Convergence / no improvement
+
+**Maps to requirement:** 9
+
+## 6. Present + Capture Feedback
+
+Show the answer, then capture:
+
+* Your rating
+* Your edits
+* Your notes
+
+**Maps to requirement:** 5
+
+## 7. Persist
+
+Write feedback to:
+
+* Structured store
+* Vector store
+
+**Maps to requirements:** 6, 10
+
+## 8. Track
+
+Log scores per run for a quality-over-time view.
+
+**Maps to requirement:** 8
+
+---
+
+# Memory Design
+
+Memory has two tiers.
+
+## 1. Long-Term Structured Memory
+
+Stored in SQLite:
+
+* Identity
+* Learning goals
+* Explicit preferences
+* Full feedback history
+
+## 2. Retrieval Layer
+
+Stored in Chroma:
+
+* Embedded past answers
+* Embedded corrections
+* Similarity recall
+
+## 3. Session State
+
+Stored in LangGraph:
+
+* Current answer
+* Score
+* Iteration count
+
+---
+
+# The Personalized-Evaluator Question
+
+Read this carefully.
+
+Your stated end goal is:
+
+> A digital representation of my preferences that automatically judges answers before presenting them.
+
+There are three ways to build that judge, in increasing cost and decreasing advisability for you right now.
+
+---
+
+## Option 1 — Prompt + RAG Evaluator
+
+**Recommended, and where you should stay for a long time.**
+
+The judge is an LLM whose rubric is dynamically built from your stored preferences and retrieved feedback.
+
+It improves the instant you add feedback:
+
+* No training
+* No waiting
+* No retraining loop
+
+For a one-person system, this approximates your preferences remarkably well and is what Projects 6–7 build.
+
+---
+
+## Option 2 — Few-Shot “Preference Exemplar” Evaluator
+
+Curate your best correction pairs and feed them as examples to the judge.
+
+This is:
+
+* Cheap
+* Effective
+* A natural extension of Option 1
+
+---
+
+## Option 3 — Fine-Tuned Evaluator Model
+
+**The deep end — likely unnecessary.**
+
+Fine-tuning a model to mimic your judgments needs:
+
+* Hundreds to thousands of high-quality preference examples
+* Money per training run
+* Retraining as your taste evolves
+* Careful evaluation to avoid doing it badly
+
+For a single user's preferences, Options 1–2 usually match or exceed it at a fraction of the effort.
+
+Do not fine-tune until you've hit a concrete, measured wall that prompting + RAG provably cannot clear.
+
+You will only know that because Project 7's tracking shows quality stalling despite plenty of feedback data.
+
+If you reach that point, you will already have:
+
+* The dataset from Project 5
+* The judgment to do it properly
+
+That is the right time, not now.
+
+---
+
+# Preference Data Collection Methods
+
+In order of value-per-effort:
+
+## 1. Explicit Ratings
+
+The easiest signal to collect.
+
+## 2. Your Edits to Answers
+
+The richest signal.
+
+The diff is the lesson.
+
+## 3. Pairwise Comparisons
+
+Example:
+
+> Which of these two is better?
+
+This is the gold standard for training a judge if you ever go that route.
+
+## 4. Free-Text Notes
+
+Great for the prompted evaluator, because you can feed them in verbatim.
+
+---
+
+# Implementation Roadmap
+
+## MVP: Projects 1–3
+
+A CLI that iteratively self-improves with stopping conditions.
+
+Usable in a weekend or two.
+
+---
+
+## Personalized Core: Projects 4–7
+
+This includes:
+
+* Memory
+* Feedback
+* RAG
+* Personalized evaluator
+
+This is the real product and where most learning happens.
+
+---
+
+## Production Polish
+
+Only if you want it.
+
+Possible additions:
+
+* Web UI
+
+  * Streamlit is the gentle on-ramp
+* LangSmith / Langfuse tracing
+* Structured learning-path generation
+* Quality dashboard
+
+None of these changes the core.
+
+They make the core pleasant to live in.
+
+---
+
+# Closing Advice
+
+Your instinct to specify the whole advanced system upfront is good engineering thinking.
+
+But the highest-leverage move here is the opposite:
+
+> Build Project 2 this week.
+
+The self-critique loop is the heart of the entire design.
+
+It takes about 50 lines, and actually watching an answer improve itself will teach you more about what your evaluator needs than any amount of architecture planning.
+
+The rest of the roadmap will make far more sense once you've felt that loop work.
+
+---
+
+# Next Step
+
+Write the actual code for Project 1 and Project 2 so you have a running self-improving agent today.
+
+That is the fastest way to make all of this concrete.
