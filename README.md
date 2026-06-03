@@ -1,60 +1,302 @@
-I am going to build a matured personal learning agent from sratch.
+# Learning Roadmap: Build a Mature Personal Learning Agent from Scratch
 
-Learning roadmap — build it in projects
-Each project builds directly on the last. Projects 1–3 are your MVP. I've noted in the capstone how each maps to your 10 architecture requirements.
-Project 1 — Single good answer (the Generator)
+Build it in projects. Each project builds directly on the last.
 
-Goal: Call an LLM from Python and reliably get answers in your preferred style.
-Core concepts: API calls, system prompts, few-shot examples, structured output.
-Stack: Python + one LLM SDK.
-Build: (a) A CLI that takes a question. (b) A system prompt encoding your traits (intuition first, concise, example, connections). (c) Ask for the answer in a fixed format. (d) Add 1–2 example answers you love as few-shot.
-Good looks like: You ask 10 varied questions and the style is consistently what you want, without re-prompting.
+**Projects 1–3 are the MVP.**
 
-Project 2 — Add the judge (the Evaluator)
+I've noted in the capstone how each maps to your 10 architecture requirements.
 
-Goal: A second LLM call that scores Project 1's answer against your rubric and lists weaknesses.
-Core concepts: LLM-as-judge, rubrics/G-Eval, separating generation from evaluation.
-Stack: + DeepEval (or a hand-written judge prompt returning JSON).
-Build: (a) Write the weighted rubric. (b) Judge call returns {scores, weaknesses, missing, cut_these, overall}. (c) Print the answer and its scorecard.
-Good looks like: The weaknesses the judge lists are ones you'd agree with on most answers.
+---
 
-Project 3 — Close the loop (Iterative refinement) ← MVP complete
+# Project 1 — Single Good Answer (The Generator)
 
-Goal: Automatically revise until the answer passes, then present.
-Core concepts: the reflection/refine loop, stopping conditions, iteration budget.
-Stack: plain Python loop (later: LangGraph).
-Build: (a) while score < threshold and tries < max_tries: regenerate, passing the judge's weaknesses back in as instructions. (b) Make threshold and max_tries config values. (c) Stop and present the best version.
-Good looks like: Final answers are measurably better than first drafts; the loop always terminates; you can tune how picky it is.
+## Goal
 
-Worked example: you ask "explain transformers." Draft 1 dives into matrix math → judge flags "no intuition first, no example" → draft 2 opens with the "every word looks at every other word" intuition and adds a sentence example → judge passes → you see draft 2.
-Project 4 — Give it memory
+Call an LLM from Python and reliably get answers in your preferred style.
 
-Goal: Remember your goals, preferences, and past corrections across sessions.
-Core concepts: persistent memory, semantic vs episodic store, context injection.
-Stack: + Mem0 (or SQLite + embeddings).
-Build: (a) Save your standing preferences and goals. (b) After each session, save the interaction. (c) On each new question, fetch relevant memories and inject them into the generator and judge prompts.
-Good looks like: It greets a new session already knowing your goals, and visibly reuses a past correction on a related topic.
+## Core Concepts
 
-Project 5 — Human-in-the-loop + a real dataset
+* API calls
+* System prompts
+* Few-shot examples
+* Structured output
 
-Goal: A simple interface where you rate/edit, and every interaction is logged.
-Core concepts: HITL, preference-data collection, RAG over your own feedback.
-Stack: + Streamlit + Chroma/SQLite-vec.
-Build: (a) UI showing the answer + scorecard with buttons: accept, edit, rate, A/B. (b) Save the full record (see "preference data" above). (c) Add retrieval: before generating, pull your most similar past corrections and feed them in.
-Good looks like: You have a clean, growing dataset, and answers on familiar topics now arrive pre-shaped by your history.
+## Stack
 
-Project 6 — Make the judge learn you (optimization)
+* Python
+* One LLM SDK
 
-Goal: Automatically rewrite the generator and judge prompts to match your collected feedback — no GPUs, no fine-tuning.
-Core concepts: programmatic prompt optimization, prompts as learnable parameters, optimizing from textual feedback.
-Stack: + DSPy / GEPA.
-Build: (a) Express your generator and judge as DSPy modules. (b) Define the metric = agreement with your ratings/edits. (c) Run GEPA over your logged data to evolve better prompts. (d) Compare the optimized judge's agreement vs your hand-written one.
-Good looks like: The optimized judge predicts your verdicts noticeably better, measured on answers it hasn't seen.
+## Build
 
-Project 7 — Fine-tune (advanced / optional)
+1. A CLI that takes a question.
+2. A system prompt encoding your traits:
 
-Goal: Bake your style into a small model so it needs less prompting, or train a dedicated evaluator.
-Core concepts: preference fine-tuning (DPO), LoRA, honest cost/benefit.
-Stack: a provider fine-tuning API, or Unsloth + a small open model.
-Build: (a) Convert your A/B picks into DPO pairs. (b) Fine-tune. (c) Evaluate against your held-out test set and against the Project 6 prompt-optimized version.
-Good looks like: A model that defaults to your style with a shorter prompt — and you can clearly state whether it beat Project 6 enough to justify the effort.
+   * Intuition first
+   * Concise
+   * Example-driven
+   * Makes connections
+3. Ask for answers in a fixed format.
+4. Add 1–2 example answers you love as few-shot examples.
+
+## Good Looks Like
+
+You ask 10 varied questions and the style is consistently what you want, without re-prompting.
+
+---
+
+# Project 2 — Add the Judge (The Evaluator)
+
+## Goal
+
+A second LLM call that scores Project 1's answer against your rubric and lists weaknesses.
+
+## Core Concepts
+
+* LLM-as-judge
+* Rubrics / G-Eval
+* Separating generation from evaluation
+
+## Stack
+
+* DeepEval (or a hand-written judge prompt returning JSON)
+
+## Build
+
+1. Write the weighted rubric.
+2. Judge call returns:
+
+```json
+{
+  "scores": {},
+  "weaknesses": [],
+  "missing": [],
+  "cut_these": [],
+  "overall": 0
+}
+```
+
+3. Print the answer and its scorecard.
+
+## Good Looks Like
+
+The weaknesses the judge lists are ones you'd agree with on most answers.
+
+---
+
+# Project 3 — Close the Loop (Iterative Refinement) ← MVP Complete
+
+## Goal
+
+Automatically revise until the answer passes, then present it.
+
+## Core Concepts
+
+* Reflection/refine loop
+* Stopping conditions
+* Iteration budget
+
+## Stack
+
+* Plain Python loop
+* Later: LangGraph
+
+## Build
+
+```python
+while score < threshold and tries < max_tries:
+    regenerate(
+        weaknesses_from_judge
+    )
+```
+
+1. Regenerate while the score is below threshold.
+2. Pass the judge's weaknesses back as instructions.
+3. Make `threshold` and `max_tries` configurable.
+4. Stop and present the best version.
+
+## Good Looks Like
+
+* Final answers are measurably better than first drafts.
+* The loop always terminates.
+* You can tune how picky it is.
+
+## Worked Example
+
+**Question:** Explain transformers.
+
+### Draft 1
+
+Dives directly into matrix math.
+
+### Judge Feedback
+
+* No intuition first.
+* No example.
+
+### Draft 2
+
+Starts with:
+
+> Every word can look at every other word when deciding what it means.
+
+Adds a simple sentence example.
+
+### Result
+
+Judge passes. User sees Draft 2.
+
+---
+
+# Project 4 — Give It Memory
+
+## Goal
+
+Remember your goals, preferences, and past corrections across sessions.
+
+## Core Concepts
+
+* Persistent memory
+* Semantic memory
+* Episodic memory
+* Context injection
+
+## Stack
+
+* Mem0
+* Or SQLite + embeddings
+
+## Build
+
+1. Save standing preferences and goals.
+2. Save each interaction after every session.
+3. Retrieve relevant memories on new questions.
+4. Inject memories into generator and judge prompts.
+
+## Good Looks Like
+
+It starts a new session already knowing your goals and reuses past corrections when relevant.
+
+---
+
+# Project 5 — Human-in-the-Loop + Real Dataset
+
+## Goal
+
+Create a simple interface where you rate, edit, and continuously collect training data.
+
+## Core Concepts
+
+* Human-in-the-loop (HITL)
+* Preference-data collection
+* Retrieval over your own feedback
+
+## Stack
+
+* Streamlit
+* Chroma or SQLite-vec
+
+## Build
+
+1. UI showing:
+
+   * Answer
+   * Scorecard
+   * Accept button
+   * Edit button
+   * Rate button
+   * A/B comparison button
+2. Save the complete interaction record.
+3. Before generating:
+
+   * Retrieve similar past corrections.
+   * Feed them into generation.
+
+## Good Looks Like
+
+You build a clean and growing dataset, and familiar topics arrive already shaped by your history.
+
+---
+
+# Project 6 — Make the Judge Learn You (Optimization)
+
+## Goal
+
+Automatically rewrite generator and judge prompts to match your collected feedback.
+
+No GPUs. No fine-tuning.
+
+## Core Concepts
+
+* Programmatic prompt optimization
+* Prompts as learnable parameters
+* Optimization from textual feedback
+
+## Stack
+
+* DSPy
+* GEPA
+
+## Build
+
+1. Express generator and judge as DSPy modules.
+2. Define:
+
+```text
+Metric = Agreement with your ratings and edits
+```
+
+3. Run GEPA over your logged dataset.
+4. Compare:
+
+   * Optimized judge
+   * Hand-written judge
+
+## Good Looks Like
+
+The optimized judge predicts your verdicts noticeably better on unseen answers.
+
+---
+
+# Project 7 — Fine-Tune (Advanced / Optional)
+
+## Goal
+
+Bake your style into a small model so it requires less prompting, or train a dedicated evaluator.
+
+## Core Concepts
+
+* Preference fine-tuning (DPO)
+* LoRA
+* Cost/benefit analysis
+
+## Stack
+
+* Provider fine-tuning API
+* Or Unsloth + small open-source model
+
+## Build
+
+1. Convert A/B selections into DPO pairs.
+2. Fine-tune the model.
+3. Evaluate against:
+
+   * Held-out test set
+   * Project 6 prompt-optimized version
+
+## Good Looks Like
+
+A model that naturally defaults to your style with a shorter prompt, and you can clearly determine whether it outperformed Project 6 enough to justify the additional complexity.
+
+---
+
+# Summary
+
+| Project | Name                | Outcome                                         |
+| ------- | ------------------- | ----------------------------------------------- |
+| 1       | Generator           | Produce answers in your preferred style         |
+| 2       | Evaluator           | Judge answer quality using a rubric             |
+| 3       | Refinement Loop     | Automatically improve answers until they pass   |
+| 4       | Memory              | Remember preferences, goals, and history        |
+| 5       | Human-in-the-Loop   | Collect feedback and build a dataset            |
+| 6       | Prompt Optimization | Learn your preferences through prompt evolution |
+| 7       | Fine-Tuning         | Encode your style directly into a model         |
