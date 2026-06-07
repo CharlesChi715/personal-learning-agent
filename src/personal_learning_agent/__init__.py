@@ -10,18 +10,19 @@ def main() -> None:
         # This is the default and can be omitted
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
-    # score = 0
+    score = 0
     rounds = 0
-    instr = "Make this greeting more cheerful:"
+    instr = "Score this greeting out of 10 in terms of cheerfulness and then make it more cheerful(in format: 'Score: X; Improved version: S'):"
     starter = "Greeting in a cheerful tone."
-    # while score < 10 and rounds < 5:
-    while rounds < 5:
+    while score < 9.5 and rounds < 5:
         response = client.responses.create(
             model="gpt-4o-mini",
             instructions='' if rounds == 0 else instr,
-            input=starter if rounds == 0 else response.output_text,
+            input=starter if rounds == 0 else che_sen,
         )
-        
+        res = response.output_text.strip()
+        che_sen = res.split('Improved version: ')[-1].strip() if 'Improved version: ' in res else res
+        score = int(res.split('Score: ')[-1].split(';')[0].strip()) if rounds > 0 else score
+
         rounds += 1
-        print('response in round ' + str(rounds) + ':', response.output_text)
-    
+        print('Score: ' + str(score) + ' | Response in round ' + str(rounds) + ':  ', che_sen)
